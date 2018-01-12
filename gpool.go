@@ -1,3 +1,7 @@
+// Package gpool is a goroutine pool library for easier handling and termination.
+//
+// For additional overview, documentation and contribution guidelines, refer to the project's "README.md".
+//
 package gpool
 
 import (
