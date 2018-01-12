@@ -17,10 +17,9 @@ Usage
 
 Create and run a gpool:
 ```go
-
-var fn1, fnn func(ctx context.Context)
-var maxWorkers, jobCacheQueueLen int
-var wait bool
+var fn1, fnn func(ctx context.Context) // the function which you want to  execute,  anonymous functions form closures is better
+var maxWorkers, jobCacheQueueLen int   // the number of goroutine and cache size
+var wait bool                          // whether blocking
 
 gp := gpool.New(maxWorkers, jobCacheQueueLen, wait)
 gp.AddJob(fn1)
