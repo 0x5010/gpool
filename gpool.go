@@ -7,7 +7,7 @@ import (
 
 // Job 任务
 type Job struct {
-	fn func()
+	fn func(ctx context.Context)
 }
 
 // Worker 任务消费者
@@ -18,7 +18,7 @@ type Worker struct {
 }
 
 // Run 任务协程
-func (w *Worker) Run(ctx context.Context) {
+func (w *Worker) run(ctx context.Context) {
 	go func() {
 		for {
 			select {
@@ -26,7 +26,7 @@ func (w *Worker) Run(ctx context.Context) {
 				return
 
 			case job := <-w.jobCacheQueue:
-				job.fn()
+				job.fn(ctx)
 				if w.wait {
 					w.wg.Done()
 				}
@@ -35,8 +35,8 @@ func (w *Worker) Run(ctx context.Context) {
 	}()
 }
 
-// WorkerPool 协程池
-type WorkerPool struct {
+// GPool 协程池
+type GPool struct {
 	maxWorkers    int
 	workers       []*Worker
 	jobCacheQueue chan Job
@@ -46,60 +46,60 @@ type WorkerPool struct {
 	cancel        context.CancelFunc
 }
 
-// NewWorkerPool 初始化协程池
-func NewWorkerPool(maxWorkers, jobCacheQueueLen int) *WorkerPool {
+// New 初始化协程池
+func New(maxWorkers, jobCacheQueueLen int, wait bool) *GPool {
 	jobCacheQueue := make(chan Job, jobCacheQueueLen)
 
 	var wg sync.WaitGroup
 	ctx, cancel := context.WithCancel(context.Background())
-	wp := &WorkerPool{
+	gp := &GPool{
 		maxWorkers:    maxWorkers,
 		jobCacheQueue: jobCacheQueue,
-		wait:          true,
+		wait:          wait,
 		wg:            &wg,
 		cancel:        cancel,
 	}
 
-	wp.Start(ctx)
+	gp.Start(ctx)
 
-	return wp
+	return gp
 }
 
 // Start 协程池运行
-func (wp *WorkerPool) Start(ctx context.Context) {
-	for i := 0; i < wp.maxWorkers; i++ {
+func (gp *GPool) Start(ctx context.Context) {
+	for i := 0; i < gp.maxWorkers; i++ {
 		worker := &Worker{
-			jobCacheQueue: wp.jobCacheQueue,
-			wait:          wp.wait,
-			wg:            wp.wg,
+			jobCacheQueue: gp.jobCacheQueue,
+			wait:          gp.wait,
+			wg:            gp.wg,
 		}
-		worker.Run(ctx)
+		worker.run(ctx)
 	}
 }
 
 // Stop 强制终止
-func (wp *WorkerPool) Stop() {
-	wp.cancel()
-	for _ = range wp.jobCacheQueue {
-		wp.wg.Done()
+func (gp *GPool) Stop() {
+	gp.cancel()
+	for _ = range gp.jobCacheQueue {
+		gp.wg.Done()
 	}
 }
 
 // Wait 等待全部任务运行完
-func (wp *WorkerPool) Wait() {
-	if wp.wait {
-		wp.wg.Wait()
+func (gp *GPool) Wait() {
+	if gp.wait {
+		gp.wg.Wait()
+		gp.cancel()
 	}
-	wp.cancel()
 }
 
 // AddJob 添加任务
-func (wp *WorkerPool) AddJob(fn func()) {
+func (gp *GPool) AddJob(fn func(ctx context.Context)) {
 	job := Job{
 		fn: fn,
 	}
-	if wp.wait {
-		wp.wg.Add(1)
+	if gp.wait {
+		gp.wg.Add(1)
 	}
-	wp.jobCacheQueue <- job
+	gp.jobCacheQueue <- job
 }

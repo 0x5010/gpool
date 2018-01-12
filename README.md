@@ -17,15 +17,25 @@ Usage
 
 Create and run a gpool:
 ```go
-wp := gpool.NewWorkerPool(maxWorkers, jobCacheQueueLen)
-wp.AddJob(fn1)
+
+var fn1, fnn func(ctx context.Context)
+var maxWorkers, jobCacheQueueLen int
+var wait bool
+
+gp := gpool.New(maxWorkers, jobCacheQueueLen, wait)
+gp.AddJob(fn1)
 ...
-wp.AddJob(fnn)
-wp.Wait()
+gp.AddJob(fnn)
+
+if wait {
+	gp.Wait()
+}
 ```
-cancel:
+
+
+termination:
 ```go
-wp.Stop()
+gp.Stop()
 ...
 ```
 
