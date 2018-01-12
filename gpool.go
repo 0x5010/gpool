@@ -1,7 +1,6 @@
 // Package gpool is a goroutine pool library for easier handling and termination.
 //
 // For additional overview, documentation and contribution guidelines, refer to the project's "README.md".
-//
 package gpool
 
 import (
@@ -42,11 +41,9 @@ func (w *Worker) run(ctx context.Context) {
 // GPool 协程池
 type GPool struct {
 	maxWorkers    int
-	workers       []*Worker
 	jobCacheQueue chan Job
 	wg            *sync.WaitGroup
 	wait          bool
-	ctx           context.Context
 	cancel        context.CancelFunc
 }
 
@@ -84,7 +81,7 @@ func (gp *GPool) Start(ctx context.Context) {
 // Stop 强制终止
 func (gp *GPool) Stop() {
 	gp.cancel()
-	for _ = range gp.jobCacheQueue {
+	for range gp.jobCacheQueue {
 		gp.wg.Done()
 	}
 }
