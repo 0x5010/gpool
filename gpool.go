@@ -8,57 +8,30 @@ import (
 	"sync"
 )
 
-// Job 任务
-type Job struct {
-	fn func(ctx context.Context)
-}
-
-// Worker 任务消费者
-type Worker struct {
-	jobCacheQueue chan Job
-	wait          bool
-	wg            *sync.WaitGroup
-}
-
-// Run 任务协程
-func (w *Worker) run(ctx context.Context) {
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-
-			case job := <-w.jobCacheQueue:
-				job.fn(ctx)
-				if w.wait {
-					w.wg.Done()
-				}
-			}
-		}
-	}()
-}
-
 // GPool 协程池
 type GPool struct {
-	maxWorkers    int
-	jobCacheQueue chan Job
-	wg            *sync.WaitGroup
-	wait          bool
-	cancel        context.CancelFunc
+	limit  int
+	queue  chan func(ctx context.Context)
+	wg     *sync.WaitGroup
+	wait   bool
+	cancel context.CancelFunc
 }
 
 // New 初始化协程池
-func New(maxWorkers, jobCacheQueueLen int, wait bool) *GPool {
-	jobCacheQueue := make(chan Job, jobCacheQueueLen)
+func New(limit, jobCount int, wait bool) *GPool {
+	if limit > jobCount {
+		limit = jobCount
+	}
+	jQueue := make(chan func(ctx context.Context), jobCount)
 
 	var wg sync.WaitGroup
 	ctx, cancel := context.WithCancel(context.Background())
 	gp := &GPool{
-		maxWorkers:    maxWorkers,
-		jobCacheQueue: jobCacheQueue,
-		wait:          wait,
-		wg:            &wg,
-		cancel:        cancel,
+		limit:  limit,
+		queue:  jQueue,
+		wait:   wait,
+		wg:     &wg,
+		cancel: cancel,
 	}
 
 	gp.Start(ctx)
@@ -66,23 +39,31 @@ func New(maxWorkers, jobCacheQueueLen int, wait bool) *GPool {
 	return gp
 }
 
-// Start 协程池运行
-func (gp *GPool) Start(ctx context.Context) {
-	for i := 0; i < gp.maxWorkers; i++ {
-		worker := &Worker{
-			jobCacheQueue: gp.jobCacheQueue,
-			wait:          gp.wait,
-			wg:            gp.wg,
-		}
-		worker.run(ctx)
+// AddJob 添加任务
+func (gp *GPool) AddJob(fn func(ctx context.Context)) {
+	if gp.wait {
+		gp.wg.Add(1)
 	}
+	gp.queue <- fn
 }
 
-// Stop 强制终止
-func (gp *GPool) Stop() {
-	gp.cancel()
-	for range gp.jobCacheQueue {
-		gp.wg.Done()
+// Start 协程池运行
+func (gp *GPool) Start(ctx context.Context) {
+	for i := 0; i < gp.limit; i++ {
+		go func() {
+			for {
+				select {
+				case <-ctx.Done():
+					return
+
+				case fn := <-gp.queue:
+					fn(ctx)
+					if gp.wait {
+						gp.wg.Done()
+					}
+				}
+			}
+		}()
 	}
 }
 
@@ -94,13 +75,10 @@ func (gp *GPool) Wait() {
 	}
 }
 
-// AddJob 添加任务
-func (gp *GPool) AddJob(fn func(ctx context.Context)) {
-	job := Job{
-		fn: fn,
+// Stop 强制终止
+func (gp *GPool) Stop() {
+	gp.cancel()
+	for range gp.queue {
+		gp.wg.Done()
 	}
-	if gp.wait {
-		gp.wg.Add(1)
-	}
-	gp.jobCacheQueue <- job
 }
