@@ -4,7 +4,7 @@
  * gpool
  * https://github.com/0x5010/gpool
  *
- * Copyright 2017 0x5010.
+ * Copyright 2018 0x5010.
  * Licensed under the MIT license.
  *
  */
