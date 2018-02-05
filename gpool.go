@@ -1,6 +1,13 @@
-// Package gpool is a goroutine pool library for easier handling and termination.
-//
-// For additional overview, documentation and contribution guidelines, refer to the project's "README.md".
+/*
+ *
+ * Created by 0x5010 on 2018/01/12.
+ * gpool
+ * https://github.com/0x5010/gpool
+ *
+ * Copyright 2017 0x5010.
+ * Licensed under the MIT license.
+ *
+ */
 package gpool
 
 import (
