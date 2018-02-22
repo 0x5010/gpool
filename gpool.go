@@ -47,7 +47,17 @@ func New(limit, jobCount int, wait bool) *GPool {
 }
 
 // AddJob 添加任务
-func (gp *GPool) AddJob(fn func(ctx context.Context)) {
+func (gp *GPool) AddJob(fn func()) {
+	if gp.wait {
+		gp.wg.Add(1)
+	}
+	gp.queue <- func(ctx context.Context) {
+		fn()
+	}
+}
+
+// AddJobWithCtx 添加可终止的任务
+func (gp *GPool) AddJobWithCtx(fn func(ctx context.Context)) {
 	if gp.wait {
 		gp.wg.Add(1)
 	}
