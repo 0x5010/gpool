@@ -1,3 +1,5 @@
+package gpool
+
 /*
  *
  * Created by 0x5010 on 2018/01/12.
@@ -8,7 +10,6 @@
  * Licensed under the MIT license.
  *
  */
-package gpool
 
 import (
 	"context"

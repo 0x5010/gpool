@@ -3,6 +3,7 @@ This is a goroutine pool library in the [Go](http:golang.org) for easier handlin
 [![LICENSE](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
 [![Build Status](https://travis-ci.org/0x5010/gpool.png?branch=master)](https://travis-ci.org/0x5010/gpool)
 [![Go Report Card](https://goreportcard.com/badge/github.com/0x5010/gpool)](https://goreportcard.com/report/github.com/0x5010/gpool)
+[![Godoc](http://img.shields.io/badge/go-documentation-blue.svg?style=flat-square)](https://godoc.org/github.com/0x5010/gpool)
 
 Installation
 -----------
